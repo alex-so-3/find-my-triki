@@ -1,0 +1,12 @@
+Third-party material in this repository
+
+- Nordic Semiconductor nRF5 SDK 17.1.0: bootloader/main.c, bootloader/config/sdk_config.h,
+  bootloader/armgcc/*, bootloader/nrf_crypto_allocator.h, app/config/sdk_config.h and the
+  linker scripts are derived from SDK examples and remain under the Nordic 5-Clause License
+  (see the headers in those files). The SDK itself and the SoftDevice are not included; they
+  are downloaded from Nordic (see README).
+- Game-controller protocol (app/src/game.c) follows the reverse engineering published by
+  TrikiEmu (https://github.com/Maku-hub/TrikiEmu, MIT) and TrikiVR
+  (https://github.com/CreoleVR/TrikiVR, MIT).
+- The configuration service is protocol-compatible with Everytag
+  (https://github.com/vasimv/Everytag).
