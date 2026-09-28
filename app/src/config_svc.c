@@ -12,12 +12,28 @@
 //   ea game MAC (6 bytes, LSB first; all-zero = disable game mode) (Triki extension)
 //   eb game advertised name (up to 20 bytes) (Triki extension)
 //   e9 info: read-only after auth, see config_svc_info_t (Triki extension)
+//   ec debug (only in DEBUG_CHR=1 builds, write after auth, read = last result):
+//      01 pin mode   -> set P0.pin: 0 disconnected, 1 out low, 2 out high,
+//                       3 in no pull, 4 in pull-down, 5 in pull-up
+//      02 reg val    -> write an IMU register over I2C
+//      03 reg        -> read an IMU register (result: status, value)
+//      04            -> GPIO snapshot: IN, OUT, DIR (3 x LE32)
+//      05 pin        -> PIN_CNF of P0.pin (LE32)
+//      06 cs sck mosi miso cmd n -> bit-banged SPI: send cmd, return n (<= 8) bytes
+//      07 on         -> DC/DC regulator on (1) / off (0)
+//   Result: command byte, then status (0 = ok) or data.
 #include "config_svc.h"
 
 #include <string.h>
 #include "app_error.h"
 #include "ble_gatts.h"
 #include "settings.h"
+#if defined(DEBUG_CHR) && DEBUG_CHR
+#include "nrf_gpio.h"
+#include "nrf_delay.h"
+#include "nrf_soc.h"
+#include "imu.h"
+#endif
 
 // 5cfce313-a7e3-45c3-933d-418b8100da7f (bytes 12-13 replaced by the 16-bit alias)
 static const ble_uuid128_t m_svc_base = { { 0x7f, 0xda, 0x00, 0x81, 0x8b, 0x41, 0x3d, 0x93,
@@ -30,7 +46,7 @@ enum
 {
     CHR_FMDN = 0xebdb, CHR_APPLE, CHR_PERIOD, CHR_KEY, CHR_AUTH,
     CHR_STILL = 0xebe0, CHR_TXPOWER, CHR_FMDN_KEY, CHR_TIME, CHR_MAC, CHR_STATUS, CHR_MOTION, CHR_DFU,
-    CHR_INFO = 0xebe9, CHR_GAME_MAC = 0xebea, CHR_GAME_NAME = 0xebeb,
+    CHR_INFO = 0xebe9, CHR_GAME_MAC = 0xebea, CHR_GAME_NAME = 0xebeb, CHR_DEBUG = 0xebec,
 };
 
 static const uint16_t m_chr_list[] =
@@ -38,6 +54,9 @@ static const uint16_t m_chr_list[] =
     CHR_AUTH, CHR_KEY, CHR_PERIOD, CHR_FMDN, CHR_APPLE, CHR_STILL, CHR_TXPOWER,
     CHR_FMDN_KEY, CHR_TIME, CHR_MAC, CHR_STATUS, CHR_MOTION, CHR_DFU,
     CHR_GAME_MAC, CHR_GAME_NAME,
+#if defined(DEBUG_CHR) && DEBUG_CHR
+    CHR_DEBUG,
+#endif
     CHR_INFO,   // info must stay last (read authorization finds it by index)
 };
 #define CHR_COUNT (sizeof(m_chr_list) / sizeof(m_chr_list[0]))
@@ -57,7 +76,7 @@ static void add_char(uint16_t svc_handle, uint8_t chr_type, int idx)
     ble_gatts_char_handles_t handles;
     ble_uuid_t uuid = { .uuid = m_chr_list[idx], .type = chr_type };
     bool info = (m_chr_list[idx] == CHR_INFO);
-    bool readable = (m_chr_list[idx] == CHR_TIME) || info;
+    bool readable = (m_chr_list[idx] == CHR_TIME) || (m_chr_list[idx] == CHR_DEBUG) || info;
 
     char_md.char_props.write = !info;
     char_md.char_props.read = readable;
@@ -99,6 +118,99 @@ static uint32_t le32(const uint8_t * p)
 {
     return p[0] | (p[1] << 8) | (p[2] << 16) | ((uint32_t) p[3] << 24);
 }
+
+#if defined(DEBUG_CHR) && DEBUG_CHR
+// Poke pins and IMU registers at run time, so power experiments need no reflash
+static void debug_cmd(const uint8_t * d, uint16_t len)
+{
+    uint8_t out[16];
+    uint16_t n = 0;
+    uint8_t v = 0;
+
+#define PUT32(x) do { uint32_t w_ = (x); for (int k = 0; k < 4; k++) out[n++] = (uint8_t) (w_ >> (8 * k)); } while (0)
+    out[n++] = len ? d[0] : 0xff;
+    if (len == 3 && d[0] == 1 && d[1] < 32)
+    {
+        switch (d[2])
+        {
+            case 0: nrf_gpio_cfg_default(d[1]); break;
+            case 1: nrf_gpio_pin_clear(d[1]); nrf_gpio_cfg_output(d[1]); break;
+            case 2: nrf_gpio_pin_set(d[1]); nrf_gpio_cfg_output(d[1]); break;
+            case 3: nrf_gpio_cfg_input(d[1], NRF_GPIO_PIN_NOPULL); break;
+            case 4: nrf_gpio_cfg_input(d[1], NRF_GPIO_PIN_PULLDOWN); break;
+            case 5: nrf_gpio_cfg_input(d[1], NRF_GPIO_PIN_PULLUP); break;
+            default: out[n++] = 1; goto done;
+        }
+        out[n++] = 0;
+    }
+    else if (len == 3 && d[0] == 2)
+        out[n++] = imu_debug_i2c(true, d[1], d[2], NULL) ? 0 : 1;
+    else if (len == 2 && d[0] == 3)
+    {
+        out[n++] = imu_debug_i2c(false, d[1], 0, &v) ? 0 : 1;
+        out[n++] = v;
+    }
+    else if (len == 1 && d[0] == 4)
+    {
+        PUT32(NRF_P0->IN);
+        PUT32(NRF_P0->OUT);
+        PUT32(NRF_P0->DIR);
+    }
+    else if (len == 2 && d[0] == 5 && d[1] < 32)
+        PUT32(NRF_P0->PIN_CNF[d[1]]);
+    else if (len == 2 && d[0] == 7)
+        out[n++] = (uint8_t) sd_power_dcdc_mode_set(d[1] ? NRF_POWER_DCDC_ENABLE : NRF_POWER_DCDC_DISABLE);
+    else if (len == 7 && d[0] == 6 && d[1] < 32 && d[2] < 32 && d[3] < 32 && d[4] < 32)
+    {
+        // Bit-banged SPI (mode 0): cs sck mosi miso, send one byte, read up to 8 bytes
+        uint8_t cs = d[1], sck = d[2], mosi = d[3], miso = d[4], cmd = d[5];
+        uint8_t nread = d[6] > 8 ? 8 : d[6];
+        nrf_gpio_pin_set(cs);
+        nrf_gpio_cfg_output(cs);
+        nrf_gpio_pin_clear(sck);
+        nrf_gpio_cfg_output(sck);
+        nrf_gpio_pin_clear(mosi);
+        nrf_gpio_cfg_output(mosi);
+        nrf_gpio_cfg_input(miso, NRF_GPIO_PIN_PULLDOWN);
+        nrf_delay_us(10);
+        nrf_gpio_pin_clear(cs);
+        nrf_delay_us(2);
+        for (int i = 7; i >= 0; i--)
+        {
+            nrf_gpio_pin_write(mosi, (cmd >> i) & 1);
+            nrf_delay_us(1);
+            nrf_gpio_pin_set(sck);
+            nrf_delay_us(1);
+            nrf_gpio_pin_clear(sck);
+        }
+        nrf_gpio_pin_clear(mosi);
+        for (int b = 0; b < nread; b++)
+        {
+            uint8_t v2 = 0;
+            for (int i = 0; i < 8; i++)
+            {
+                nrf_gpio_pin_set(sck);
+                nrf_delay_us(1);
+                v2 = (uint8_t) ((v2 << 1) | nrf_gpio_pin_read(miso));
+                nrf_gpio_pin_clear(sck);
+                nrf_delay_us(1);
+            }
+            out[n++] = v2;
+        }
+        nrf_gpio_pin_set(cs);
+        nrf_gpio_cfg_default(miso);
+        nrf_delay_us(50);   // tRES1 / tDP
+    }
+    else
+        out[n++] = 0xff;
+done:;
+    ble_gatts_value_t value = { .len = n, .offset = 0, .p_value = out };
+    for (int i = 0; i < CHR_COUNT; i++)
+        if (m_chr_list[i] == CHR_DEBUG)
+            (void) sd_ble_gatts_value_set(BLE_CONN_HANDLE_INVALID, m_value_handles[i], &value);
+#undef PUT32
+}
+#endif
 
 static void on_write(uint16_t chr, const uint8_t * data, uint16_t len)
 {
@@ -160,6 +272,13 @@ static void on_write(uint16_t chr, const uint8_t * data, uint16_t len)
         m_dfu = true;
         changed = false;
     }
+#if defined(DEBUG_CHR) && DEBUG_CHR
+    else if (chr == CHR_DEBUG)
+    {
+        debug_cmd(data, len);
+        changed = false;
+    }
+#endif
     else
         changed = false;
 

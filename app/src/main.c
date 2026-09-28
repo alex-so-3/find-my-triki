@@ -116,7 +116,9 @@ static void update_battery(void)
 
 static void beacon_timer_handler(void * p_context)
 {
+#if USE_WDT
     nrfx_wdt_channel_feed(m_wdt_channel);
+#endif
 
     m_since_battery_ms += m_tick_ms;
     if (m_since_battery_ms >= BATTERY_CHECK_MS && !m_config_mode)
@@ -489,6 +491,9 @@ static void wdt_event_handler(void)
 
 static void wdt_init(void)
 {
+#if !USE_WDT
+    return;
+#endif
     nrfx_wdt_config_t config = NRFX_WDT_DEAFULT_CONFIG;
     config.behaviour = NRF_WDT_BEHAVIOUR_RUN_SLEEP;
     config.reload_value = WDT_TIMEOUT_MS;

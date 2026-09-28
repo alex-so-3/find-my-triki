@@ -36,6 +36,8 @@ INFO = chr_uuid('be9')
 # Standard DULT non-owner control point: Sound_Start 0x0300 / Sound_Stop 0x0301 (little-endian)
 DULT_CP = '8e0c0001-1d68-fb92-bf61-48377421680e'
 GAME_MAC, GAME_NAME = chr_uuid('bea'), chr_uuid('beb')
+DEBUG = chr_uuid('bec')   # only in firmware built with DEBUG_CHR=1
+PIN_MODES = {'off': 0, 'low': 1, 'high': 2, 'in': 3, 'pulldown': 4, 'pullup': 5}
 INFO_FORMAT = '<BHHHHIBBBBBB'
 INFO_FIELDS = ('layout', 'app_version', 'battery_mv', 'still_timeout_s', 'motion_threshold_mg',
                'status_flags', 'period', 'tx_power', 'apple_enabled', 'fmdn_enabled', 'moving', 'imu_ok')
@@ -127,6 +129,32 @@ async def main(args):
             values = struct.unpack(INFO_FORMAT, await c.read_gatt_char(INFO))
             for name, value in zip(INFO_FIELDS, values):
                 print(f'  {name}: {hex(value) if name == "status_flags" else value}')
+        async def debug(cmd):
+            await w(DEBUG, bytes(cmd))
+            return bytes(await c.read_gatt_char(DEBUG))
+
+        for spec in args.pin or []:
+            pin, mode = spec.split('=')
+            r = await debug([1, int(pin), PIN_MODES[mode]])
+            print(f'  P0.{int(pin):02d} -> {mode}: {"ok" if r[1:2] == b"\x00" else r.hex()}')
+        for spec in args.i2c_write or []:
+            reg, val = (int(x, 16) for x in spec.split('='))
+            r = await debug([2, reg, val])
+            print(f'  IMU 0x{reg:02x} <- 0x{val:02x}: {"ok" if r[1:2] == b"\x00" else "failed"}')
+        for spec in args.i2c_read or []:
+            reg = int(spec, 16)
+            r = await debug([3, reg])
+            print(f'  IMU 0x{reg:02x} = ' + (f'0x{r[2]:02x}' if r[1] == 0 else 'failed'))
+        if args.gpio:
+            r = await debug([4])
+            gin, gout, gdir = struct.unpack('<III', r[1:13])
+            print(f'  IN  {gin:032b}\n  OUT {gout:032b}\n  DIR {gdir:032b}   (bit n = P0.n)')
+            for pin in range(32):
+                cnf = struct.unpack('<I', (await debug([5, pin]))[1:5])[0]
+                if cnf != 0x2:   # 0x2 = reset value (input, buffer disconnected)
+                    pull = {0: '', 1: ' pull-down', 3: ' pull-up'}.get((cnf >> 2) & 3, ' ?')
+                    kind = 'out ' + str((gout >> pin) & 1) if cnf & 1 else ('in' if not cnf & 2 else 'in (disconnected)')
+                    print(f'  P0.{pin:02d}: {kind}{pull}  PIN_CNF=0x{cnf:08x}')
         if args.ring:
             await w(DULT_CP, bytes([0x00, 0x03]))
             print('Blinking the LED (about 10 s)')
@@ -167,4 +195,10 @@ if __name__ == '__main__':
     p.add_argument('--game-mac', help='game-controller mode BLE address aa:bb:cc:dd:ee:ff (0 or empty = disable)')
     p.add_argument('--game-name', help='game-controller advertised name, up to 20 bytes')
     p.add_argument('--dfu', action='store_true', help='reboot into the DFU bootloader')
+    dbg = p.add_argument_group('debugging (firmware built with DEBUG_CHR=1 only)')
+    dbg.add_argument('--pin', action='append', metavar='N=MODE',
+                     help='set P0.N to off|low|high|in|pulldown|pullup (repeatable)')
+    dbg.add_argument('--i2c-write', action='append', metavar='RR=VV', help='write IMU register, hex (repeatable)')
+    dbg.add_argument('--i2c-read', action='append', metavar='RR', help='read IMU register, hex (repeatable)')
+    dbg.add_argument('--gpio', action='store_true', help='print GPIO IN/OUT/DIR and every configured pin')
     asyncio.run(main(p.parse_args()))

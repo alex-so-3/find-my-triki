@@ -167,6 +167,17 @@ void imu_rearm(void)
     nrfx_gpiote_in_event_enable(IMU_INT_PIN, true);
 }
 
+#if defined(DEBUG_CHR) && DEBUG_CHR
+bool imu_debug_i2c(bool write, uint8_t reg, uint8_t val, uint8_t * out)
+{
+    ret_code_t err;
+    nrfx_twim_enable(&m_twim);
+    err = write ? imu_write(reg, val) : imu_read(reg, out);
+    nrfx_twim_disable(&m_twim);
+    return err == NRFX_SUCCESS;
+}
+#endif
+
 bool imu_present(void)
 {
     return m_present;

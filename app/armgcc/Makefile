@@ -9,10 +9,14 @@ PROJ_DIR := ..
 # Build options (make LFCLK=RC DCDC=1 IMU_INT2=1)
 #   LFCLK=RC  - use the internal RC oscillator if the 32.768 kHz crystal is missing
 #   DCDC=1    - enable the DC/DC regulator (only if the inductor is populated!)
+#   DEBUG_CHR=1 - config characteristic ec for poking pins and IMU registers (debugging only)
+#   WDT=0     - no watchdog (for measuring its current; keep it on in real use)
 #   LED_ACTIVE_HIGH=1 - LED lights when P0.28 is high (Triki: active low)
 #   IMU_INT2=1 - route the LSM6DSL wake-up event to INT2 (P0.10) instead of INT1 (P0.09)
 LFCLK ?= XTAL
 DCDC ?= 0
+DEBUG_CHR ?= 0
+WDT ?= 1
 IMU_INT2 ?= 0
 LED_ACTIVE_HIGH ?= 0
 APP_VERSION ?= 0
@@ -101,6 +105,8 @@ COMMON_FLAGS += -DNRF_SD_BLE_API_VERSION=7
 COMMON_FLAGS += -DS112
 COMMON_FLAGS += -DSOFTDEVICE_PRESENT
 COMMON_FLAGS += -DHAS_DCDC=$(DCDC)
+COMMON_FLAGS += -DDEBUG_CHR=$(DEBUG_CHR)
+COMMON_FLAGS += -DUSE_WDT=$(WDT)
 COMMON_FLAGS += -DIMU_USE_INT2=$(IMU_INT2)
 COMMON_FLAGS += -DAPP_VERSION=$(APP_VERSION)
 ifeq ($(LED_ACTIVE_HIGH), 1)

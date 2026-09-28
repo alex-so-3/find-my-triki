@@ -18,6 +18,9 @@ void imu_rearm(void);
 
 bool imu_present(void);
 
+// Debug builds only (DEBUG_CHR=1): one register write or read over I2C
+bool imu_debug_i2c(bool write, uint8_t reg, uint8_t val, uint8_t * out);
+
 // --- game-mode streaming (accel + gyro at ~104 Hz) ---
 // Reconfigure the sensor for continuous output. Returns false if the IMU is absent.
 bool imu_stream_start(void);

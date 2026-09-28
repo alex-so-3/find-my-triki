@@ -37,7 +37,7 @@
 // MX25R8035F SPI NOR - only used to put it into deep power-down
 #define NOR_CS_PIN           14
 #define NOR_MISO_PIN         15
-#define NOR_MOSI_PIN         18
-#define NOR_SCK_PIN          20
+#define NOR_MOSI_PIN         20   // SCK and MOSI swapped vs. the reverse-engineered schematic:
+#define NOR_SCK_PIN          18   // verified by reading the JEDEC ID C2 28 14
 
 #endif
