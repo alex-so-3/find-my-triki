@@ -2,10 +2,10 @@
 
 | Stan | Co robi tag |
 |---|---|
-| Ruch | jedno zdarzenie reklamowe co 0,5 s × `period`, na zmianę Apple / Google (domyślnie każda sieć co 2 s); co czwarta ramka Apple przyjmuje połączenie |
-| Bezruch (po `still_timeout`, domyślnie 10 min) | co 5 s × `period` (każda sieć co 20 s); każda ramka Apple przyjmuje połączenie |
+| Ruch | jedno zdarzenie reklamowe co 0,5 s × `period`, na zmianę Apple / Google (domyślnie każda sieć co 2 s) |
+| Bezruch (po `still_timeout`, domyślnie 10 min) | co 5 s × `period` (każda sieć co 20 s) |
 | Przebudzenie | czujnik ruchu (próg ~63 mg) → od razu ramka i powrót do trybu „ruch” |
-| Połączenie | aplikacja może w każdej chwili połączyć się, żeby zadzwonić, zmienić ustawienia albo wgrać firmware (bez hasła połączenie jest zrywane po 20 s). Połączenie liczy się jak ruch, więc schowany tag zaczyna nadawać często i łatwiej go namierzyć |
+| Połączenie | każda ramka Apple przyjmuje połączenie – aplikacja może w każdej chwili połączyć się, żeby zadzwonić, zmienić ustawienia albo wgrać firmware (bez hasła połączenie jest zrywane po 20 s). Połączenie liczy się jak ruch, więc schowany tag zaczyna nadawać często i łatwiej go namierzyć |
 | Tryb konfiguracji | reklama „TrikiTag” przez 120 s |
 | DFU | bootloader „TrikiTagDFU”, po 2 min bez połączenia powrót do aplikacji |
 

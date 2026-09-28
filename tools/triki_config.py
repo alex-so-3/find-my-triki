@@ -176,7 +176,7 @@ if __name__ == '__main__':
     p.add_argument('--timeout', type=float, default=20, help='scan timeout, s')
     p.add_argument('--connect-timeout', type=float, default=90,
                    help='how long to wait for a connectable frame, s (the tag accepts connections '
-                        'on every 4th Apple frame while moving, every ~20 s while still)')
+                        'on every Apple frame: every ~2 s while moving, every ~20 s while still)')
     p.add_argument('--rescan', action='store_true', help='forget the remembered tag and scan again')
     p.add_argument('-k', '--keyfile', help='OpenHaystack *_keyfile, the first key is used')
     p.add_argument('-f', '--fmdnkey', help='Google FMDN EID, 40 hex characters')

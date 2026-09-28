@@ -3,7 +3,9 @@
 Nordic Power Profiler Kit II w trybie source meter: 3,0 V podawane zamiast baterii na styk 3V3 i
 pole GND, bateria wyjęta. Odczyt przez [ppk2-api](https://pypi.org/project/ppk2-api/), okna po
 10 s. „Uśpienie” to mediana prądu między ramkami, „średnio” – średnia z całego okna. Firmware v17,
-domyślne ustawienia (`period` 2, moc TX 0 dBm, próg ruchu 63 mg, bezruch po 10 min).
+domyślne ustawienia (`period` 2, moc TX 0 dBm, próg ruchu 63 mg, bezruch po 10 min). W v17 w ruchu
+połączenie przyjmowała co czwarta ramka Apple; od v18 każda (aplikacje z krótkim limitem czasu nie
+trafiały w tag) – w ruchu to według szacunku ~1–2 µA więcej, uśpienie i bezruch bez zmian.
 
 Skrypt odczytu gubił część próbek (~40 tys. z ~100 tys. na sekundę), więc średnie są przybliżone
 (±20–30%); mediana uśpienia jest stabilna co do 0,1 µA.

@@ -127,14 +127,8 @@ bool adv_anything_to_send(void)
     return apple_on() || fmdn_on();
 }
 
-// While moving, only every Nth Apple frame accepts connections: a connectable event listens for
-// a connection request after each transmission, which costs current at the fast rate. A still
-// tag advertises rarely, and is the one someone is looking for, so all its frames stay connectable.
-#define APPLE_CONNECTABLE_EVERY_MOVING 4
-
-void adv_beacon_tick(bool moving)
+void adv_beacon_tick(void)
 {
-    static uint8_t apple_count;
     ble_gap_addr_t addr;
     bool fmdn;
 
@@ -158,10 +152,10 @@ void adv_beacon_tick(bool moving)
     {
         addr_from_key(&addr, g_settings.apple_key);
         build_apple();
-        bool connectable = !moving || apple_count == 0;
-        apple_count = (uint8_t) ((apple_count + 1) % APPLE_CONNECTABLE_EVERY_MOVING);
-        // Connectable ones let the app ring/configure/update the tag
-        start(&addr, m_apple_adv, sizeof(m_apple_adv), connectable, BEACON_ADV_INTERVAL, 0, 1);
+        // Every Apple frame is connectable, so a phone can ring/configure/update the tag at once.
+        // (Making only every 4th one connectable while moving saved a little current but made
+        // apps with short connection timeouts miss the tag.)
+        start(&addr, m_apple_adv, sizeof(m_apple_adv), true, BEACON_ADV_INTERVAL, 0, 1);
     }
 }
 

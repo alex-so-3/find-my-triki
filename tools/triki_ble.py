@@ -1,6 +1,6 @@
 """Finding a find-my-triki tag over BLE, shared by triki_config.py and triki_dfu.py.
 
-While moving, only every 4th Apple frame of the tag accepts connections (every ~20 s while
+The tag accepts connections on its Apple frames (every ~2 s while moving, every ~20 s while
 still), so a connection has to wait for one. On macOS the tag's CoreBluetooth identifier is
 remembered after the first scan, and later runs hand it straight to the system, which then
 connects on the next connectable frame - no scan needed.

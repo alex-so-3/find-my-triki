@@ -13,7 +13,7 @@
 
 include toolchain.mk
 
-APP_VERSION ?= 17
+APP_VERSION ?= 18
 LFCLK ?= XTAL
 DCDC ?= 1
 DEBUG_CHR ?= 0
