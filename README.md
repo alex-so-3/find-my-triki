@@ -7,8 +7,14 @@ go w lokalizator widoczny jednocześnie w dwóch sieciach:
 - **Google Find Hub** – jako tracker ze stałym identyfikatorem (EID), jak
   [Everytag](https://github.com/vasimv/Everytag).
 
-Do tego: dzwonienie diodą (standard DULT), konfiguracja przez BLE, bezpieczne OTA, pobór ~7 µA w
-uśpieniu i opcjonalny tryb kontrolera do gier.
+Do tego: dzwonienie diodą (standard DULT), konfiguracja przez BLE, bezpieczne OTA i opcjonalny
+tryb kontrolera do gier.
+
+**Oszczędzanie baterii akcelerometrem.** Większość tagów nadaje cały czas w tym samym rytmie. Ten
+używa wbudowanego w Triki akcelerometru: w ruchu każda sieć dostaje ramkę co 2 s, a po 10 minutach
+bez ruchu tylko co 20 s. Pierwsze poruszenie od razu budzi tag (czujnik pracuje przy 1,6 Hz i
+bierze ~4,5 µA). Połączenie z tagiem, np. dzwonienie z telefonu, też liczy się jak ruch, więc
+schowany tag przy szukaniu zaczyna nadawać często. W uśpieniu całość pobiera ~7 µA.
 
 Do pracy z tagiem:
 - [OpenTagViewer-triki](https://github.com/alex-so-3/OpenTagViewer-triki) – aplikacja na Androida
