@@ -16,10 +16,10 @@ Requires: pip install bleak
 """
 import argparse
 import asyncio
-import base64
 import struct
 import sys
 
+import triki_ble
 from bleak import BleakClient, BleakScanner
 
 SERVICE = '5cfce313-a7e3-45c3-933d-418b8100da7f'
@@ -41,13 +41,6 @@ INFO_FIELDS = ('layout', 'app_version', 'battery_mv', 'still_timeout_s', 'motion
                'status_flags', 'period', 'tx_power', 'apple_enabled', 'fmdn_enabled', 'moving', 'imu_ok')
 
 
-def adv_key_from_keys_file(path):
-    """Advertisement key (28 bytes) from a macless-haystack style .keys file."""
-    for line in open(path):
-        if line.startswith('Advertisement key:'):
-            return base64.b64decode(line.split(':', 1)[1].strip())
-    sys.exit(f'{path}: no "Advertisement key" line')
-
 
 def u32(v):
     return struct.pack('<I', int(v, 0) if isinstance(v, str) else v)
@@ -55,21 +48,11 @@ def u32(v):
 
 async def find_device(args):
     if args.address:
-        return args.address
+        return await triki_ble.known_device(args.address) or args.address
     if args.keys:
-        # Match the Apple beacon payload (bytes 6.. of the advertisement key)
-        key_part = adv_key_from_keys_file(args.keys)[6:12]
-
-        def match(dev, adv):
-            data = adv.manufacturer_data.get(0x004C, b'')
-            return data[:2] == b'\x12\x19' and data[3:9] == key_part
-
-        print('Scanning for the tag beacon (move the tag to make it faster)...')
-        dev = await BleakScanner.find_device_by_filter(match, timeout=max(args.timeout, 30))
-        if not dev:
-            sys.exit('Tag not found')
-        print(f'Found {dev.address}')
-        return dev
+        if args.rescan:
+            triki_ble.forget(args.keys)
+        return await triki_ble.find_tag(args.keys, max(args.timeout, 30))
     print(f'Scanning for "{args.name}" (hold the tag button for 3 s)...')
     dev = await BleakScanner.find_device_by_name(args.name, timeout=args.timeout)
     if not dev:
@@ -80,7 +63,8 @@ async def find_device(args):
 
 async def main(args):
     target = await find_device(args)
-    async with BleakClient(target, timeout=args.timeout) as c:
+    print(f'Connecting (waits for a connectable frame, up to {args.connect_timeout:.0f} s)...')
+    async with BleakClient(target, timeout=args.connect_timeout) as c:
         async def w(uuid, data):
             await c.write_gatt_char(uuid, data, response=True)
 
@@ -161,7 +145,11 @@ if __name__ == '__main__':
     p.add_argument('-i', '--address', help='BLE address/UUID (default: scan by name)')
     p.add_argument('-K', '--keys', help='find the tag by its Apple beacon (.keys file) instead of by name')
     p.add_argument('--name', default='TrikiTag')
-    p.add_argument('--timeout', type=float, default=20)
+    p.add_argument('--timeout', type=float, default=20, help='scan timeout, s')
+    p.add_argument('--connect-timeout', type=float, default=90,
+                   help='how long to wait for a connectable frame, s (the tag accepts connections '
+                        'on every 4th Apple frame while moving, every ~20 s while still)')
+    p.add_argument('--rescan', action='store_true', help='forget the remembered tag and scan again')
     p.add_argument('-k', '--keyfile', help='OpenHaystack *_keyfile, the first key is used')
     p.add_argument('-f', '--fmdnkey', help='Google FMDN EID, 40 hex characters')
     p.add_argument('-g', '--fmdn', help='FMDN broadcasting 0/1')

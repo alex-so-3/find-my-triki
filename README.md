@@ -123,7 +123,9 @@ make clean && make
 
 Albo przez BLE po wgraniu. `-K` szuka tagu po jego ramce Apple (tag w bezruchu nadaje rzadko –
 porusz nim, żeby szybciej go znaleźć); bez `-K` narzędzie szuka tagu po nazwie w trybie
-konfiguracji (przycisk 3 s):
+konfiguracji (przycisk 3 s). Na macOS znaleziony tag jest zapamiętywany
+(`~/.cache/find-my-triki/`) i kolejne uruchomienia łączą się bez skanowania, czekając do 90 s
+na ramkę przyjmującą połączenie (`--connect-timeout`; `--rescan` szuka od nowa):
 
 ```sh
 tools/triki_config.py -a abcdefgh -K keys/NAZWA.keys -k keys/NAZWA_keyfile -f 00112233... -n NoweHas1

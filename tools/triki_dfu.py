@@ -7,13 +7,13 @@
 """
 import argparse
 import asyncio
-import base64
 import json
 import struct
 import sys
 import zipfile
 import zlib
 
+import triki_ble
 from bleak import BleakClient, BleakScanner
 
 BUTTONLESS = '8ec90003-f315-4f60-9fb8-838830daea50'
@@ -22,27 +22,12 @@ PKT = '8ec90002-f315-4f60-9fb8-838830daea50'
 PRN = 8
 
 
-def adv_key_part(path):
-    for line in open(path):
-        if line.startswith('Advertisement key:'):
-            return base64.b64decode(line.split(':', 1)[1].strip())[6:12]
-    sys.exit(f'{path}: no "Advertisement key" line')
-
-
-async def enter_bootloader(keys, timeout):
-    part = adv_key_part(keys)
-
-    def match(dev, adv):
-        data = adv.manufacturer_data.get(0x004C, b'')
-        return data[:2] == b'\x12\x19' and data[3:9] == part
-
-    print('Scanning for the tag (move it to make it advertise faster)...')
-    dev = await BleakScanner.find_device_by_filter(match, timeout=timeout)
-    if not dev:
-        sys.exit('Tag not found')
-    print(f'Found tag {dev.address}, asking it to restart into the bootloader')
+async def enter_bootloader(keys, timeout, connect_timeout):
+    dev = await triki_ble.find_tag(keys, timeout)
+    print(f'Connecting (waits for a connectable frame, up to {connect_timeout:.0f} s)...')
     got = asyncio.Event()
-    async with BleakClient(dev, timeout=20) as c:
+    async with BleakClient(dev, timeout=connect_timeout) as c:
+        print('Connected, asking the tag to restart into the bootloader')
         await c.start_notify(BUTTONLESS, lambda _, d: got.set())
         await c.write_gatt_char(BUTTONLESS, b'\x01', response=True)
         try:
@@ -116,7 +101,9 @@ async def main(a):
     app = json.loads(z.read('manifest.json'))['manifest']['application']
     init, fw = z.read(app['dat_file']), z.read(app['bin_file'])
     if not a.bootloader:
-        await enter_bootloader(a.keys, a.timeout)
+        if a.rescan:
+            triki_ble.forget(a.keys)
+        await enter_bootloader(a.keys, a.timeout, a.connect_timeout)
     print(f'Scanning for "{a.name}"...')
     dev = await BleakScanner.find_device_by_name(a.name, timeout=30)
     if not dev:
@@ -132,7 +119,10 @@ if __name__ == '__main__':
     p.add_argument('-K', '--keys', help='.keys file of the tag, to find it by its Apple beacon')
     p.add_argument('--bootloader', action='store_true', help='the tag is already in the bootloader')
     p.add_argument('--name', default='TrikiTagDFU')
-    p.add_argument('--timeout', type=float, default=90)
+    p.add_argument('--timeout', type=float, default=90, help='scan timeout, s')
+    p.add_argument('--connect-timeout', type=float, default=90,
+                   help='how long to wait for a connectable frame of the running tag, s')
+    p.add_argument('--rescan', action='store_true', help='forget the remembered tag and scan again')
     a = p.parse_args()
     if not a.bootloader and not a.keys:
         p.error('-K is needed unless --bootloader')
