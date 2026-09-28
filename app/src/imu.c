@@ -34,7 +34,7 @@
 #define CTRL1_XL_104HZ_16G 0x44    // ODR 104 Hz, +-16 g
 #define CTRL2_G_104HZ_2000 0x4C    // ODR 104 Hz, +-2000 dps
 
-#define CTRL1_XL_12_5HZ    0x10    // ODR 12.5 Hz, +-2 g
+#define CTRL1_XL_1_6HZ     0xB0    // ODR 1.6 Hz (low-power mode only), +-2 g
 #define CTRL3_C_BDU_INC    0x44
 #define CTRL3_C_SW_RESET   0x01
 #define CTRL6_C_XL_LP      0x10    // XL_HM_MODE = 1 -> low power
@@ -78,7 +78,9 @@ static uint8_t threshold_to_reg(uint16_t threshold_mg)
     return (uint8_t) ths;
 }
 
-// Program the sensor for latched wake-on-motion at 12.5 Hz low power (TWIM must be enabled)
+// Program the sensor for latched wake-on-motion at 1.6 Hz low power (TWIM must be enabled).
+// The slowest rate the accelerometer offers: motion is noticed within ~0.6 s, which is plenty
+// for a tracker, and the sensor - the largest continuous draw on the board - idles longest.
 static ret_code_t configure_wakeup(uint16_t threshold_mg)
 {
     ret_code_t err;
@@ -88,7 +90,7 @@ static ret_code_t configure_wakeup(uint16_t threshold_mg)
     err |= imu_write(REG_CTRL2_G, 0);               // gyro power-down
     err |= imu_write(REG_CTRL7_G, CTRL7_G_LP);
     err |= imu_write(REG_CTRL6_C, CTRL6_C_XL_LP);   // accel low-power mode
-    err |= imu_write(REG_CTRL1_XL, CTRL1_XL_12_5HZ);
+    err |= imu_write(REG_CTRL1_XL, CTRL1_XL_1_6HZ);
     err |= imu_write(REG_WAKE_UP_DUR, 0);
     err |= imu_write(REG_WAKE_UP_THS, threshold_to_reg(threshold_mg));
     err |= imu_write(REG_TAP_CFG, TAP_CFG_INT_LIR);

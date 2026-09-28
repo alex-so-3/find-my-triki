@@ -7,7 +7,7 @@
 
 typedef void (*imu_motion_handler_t)(void);
 
-// Gyro off, accel 12.5 Hz low-power, latched wake-up interrupt on INT pin.
+// Gyro off, accel 1.6 Hz low-power, latched wake-up interrupt on INT pin.
 // handler runs in interrupt context when motion is detected; the interrupt
 // then stays disabled until imu_rearm() is called.
 // threshold_mg = 0 puts the IMU into power-down and returns false.

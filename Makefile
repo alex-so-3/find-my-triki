@@ -13,7 +13,7 @@
 
 include toolchain.mk
 
-APP_VERSION ?= 6
+APP_VERSION ?= 7
 LFCLK ?= XTAL
 DCDC ?= 1
 IMU_INT2 ?= 0

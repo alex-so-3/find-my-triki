@@ -6,8 +6,9 @@
 #include <stdbool.h>
 
 void adv_init(void);
-// Send one advertising event for the next enabled network (alternates)
-void adv_beacon_tick(void);
+// Send one advertising event for the next enabled network (alternates). While moving only
+// every 4th Apple event is connectable; while still, all of them are.
+void adv_beacon_tick(bool moving);
 // Recompute status bytes (battery etc.)
 void adv_update_status(uint16_t battery_mv);
 bool adv_anything_to_send(void);

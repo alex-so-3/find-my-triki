@@ -131,7 +131,7 @@ static void beacon_timer_handler(void * p_context)
     }
     // No beacon advertising while connected or streaming as a game controller
     if (m_conn_handle == BLE_CONN_HANDLE_INVALID && !m_game_mode)
-        adv_beacon_tick();
+        adv_beacon_tick(m_moving);
 }
 
 static void apply_motion_state(void)
@@ -171,7 +171,7 @@ static void on_motion(void)
         apply_motion_state();
         // Tell the networks right away that we are on the move
         if (!m_config_mode && m_conn_handle == BLE_CONN_HANDLE_INVALID)
-            adv_beacon_tick();
+            adv_beacon_tick(m_moving);
     }
 }
 

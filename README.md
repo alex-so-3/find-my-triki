@@ -31,7 +31,7 @@ Pola SWD i pełna lista pinów: *Pinout i pierwsze wgranie*.
 
 | Stan | Co robi tag |
 |---|---|
-| Ruch | co 0,5 s × `period` jedno zdarzenie reklamowe, na zmianę Apple / Google (domyślnie każda sieć co 2 s) |
+| Ruch | co 0,5 s × `period` jedno zdarzenie reklamowe, na zmianę Apple / Google (domyślnie każda sieć co 2 s). Połączyć się można przy co czwartej ramce Apple (domyślnie co ~8 s) |
 | Bezruch (po `still_timeout`, domyślnie 10 min) | co 5 s × `period` (domyślnie każda sieć co 20 s) |
 | Przebudzenie | IMU (wake-up, próg domyślnie ~63 mg) zgłasza przerwanie → od razu pakiet i powrót do trybu „ruch” |
 | Połączenie | każde połączenie (dzwonienie, konfiguracja) liczy się jak ruch: tag wraca do szybkiego nadawania na `still_timeout`, więc schowany, nieruszany tag łatwiej namierzyć po sygnale |
@@ -292,10 +292,12 @@ SWD zostaje dostępne.
 
 ## Pobór prądu
 
-Nie zmierzony jeszcze na sprzęcie. Główne składniki: IMU w trybie 12,5 Hz low-power (~10 µA),
-reklamy (~1–5 µA zależnie od stanu i mocy TX), nRF w System ON z RTC (~2 µA). Flash SPI jest
-usypiany (deep power-down), żyroskop wyłączony. Najwięcej da niższa moc TX (`triki_config.py -p 1`)
-i dłuższy `period` (`-d 4` albo `-d 8`).
+Nie zmierzony jeszcze na sprzęcie. Główne składniki: IMU budzące ruchem w trybie 1,6 Hz
+low-power, reklamy (zależnie od stanu i mocy TX), nRF w System ON z RTC (~2 µA). Zasila go
+przetwornica DC/DC, flash SPI jest usypiany (deep power-down), żyroskop wyłączony. W ruchu tylko co
+czwarta ramka Apple przyjmuje połączenia (każda taka ramka po nadaniu nasłuchuje, a to kosztuje);
+w bezruchu – każda. Dalej zejść można ustawieniami: dłuższy `period` (`-d 4` albo `-d 8`), krótszy
+czas do bezruchu (`-l`), niższa moc TX (`-p 0`, kosztem zasięgu).
 
 ## Struktura
 
