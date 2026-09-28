@@ -150,11 +150,11 @@ zasilana w trakcie wgrywania.
 
 | Pole | Gdzie (na zdjęciu) | Do czego |
 |---|---|---|
-| 3V3 | górna śruba (styk baterii) | napięcie odniesienia dla sondy (VTref), **nie zasilanie** |
+| 3V3 | duży cynowany styk u góry (styk baterii) | napięcie odniesienia dla sondy (VTref), **nie zasilanie** |
 | GND | pole na prawo od przycisku, wyżej | masa |
 | nRESET | pole obok GND, bliżej przycisku | reset (P0.21) – opcjonalny, ale pomaga przy `recover` |
 | SWDIO | dolne pole po prawej | dane SWD |
-| SWCLK | pole obok SWDIO, bliżej śruby | zegar SWD |
+| SWCLK | pole obok SWDIO, bliżej dolnego styku baterii | zegar SWD |
 
 Pola są małe i bez otworów, więc najwygodniej użyć sprężynowych igieł na statywach (PCBite albo
 podobnych) i oprzeć płytkę na krawędziach:
