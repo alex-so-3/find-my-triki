@@ -50,6 +50,9 @@ bezruchu, a `-m` próg ruchu w mg).
 Bootloader przyjmuje tylko paczki podpisane Twoim kluczem, a stara aplikacja zostaje, dopóki nowa
 nie zostanie odebrana i sprawdzona – przerwany transfer nic nie psuje.
 
+Jeśli połączenie z Maca raz po raz kończy się timeoutem, choć tag nadaje, pomaga restart Bluetooth:
+`blueutil -p 0 && sleep 3 && blueutil -p 1` (`brew install blueutil`).
+
 macOS nie odświeża zapamiętanego układu usług BLE po aktualizacji. Jeśli `triki_dfu.py` nie widzi
 usługi DFU (`Characteristic 8ec90003… was not found`) albo `triki_config.py` dostaje błędy długości,
 wyczyść tę pamięć (sparowanych urządzeń nie rusza):
