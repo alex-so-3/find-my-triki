@@ -17,6 +17,20 @@ Do pracy z tagiem:
   Google; bez niej tag po kilku dniach znika z Find Hub,
 - `tools/` – to samo z komputera.
 
+## Bateria
+
+Szacunek z [pomiarów](docs/measurements.md) (~6,8 µA w uśpieniu, ~22 µA średnio w ruchu, ~10 µA w
+bezruchu), dla CR2032 z ~200 mAh użytecznej pojemności, przy domyślnych ustawieniach:
+
+| Użycie | Średni prąd | Czas pracy |
+|---|---|---|
+| głównie leży (np. w szufladzie, portfelu w domu) | ~10 µA | **~2,3 roku** |
+| mieszane: ~6 h dziennie w ruchu (torba, klucze) | ~13 µA | **~1,8 roku** |
+| cały czas w ruchu | ~22 µA | **~1 rok** |
+
+Nie uwzględnia samorozładowania baterii, niskich temperatur ani częstego dzwonienia (dioda ~2 mA).
+Dłuższy `period` (`-d 4`) wyraźnie wydłuża czas pracy w ruchu – patrz [docs/power.md](docs/power.md).
+
 ## Dokumentacja
 
 | | |
@@ -25,7 +39,8 @@ Do pracy z tagiem:
 | [docs/setup.md](docs/setup.md) | klucze Apple/Google, konfiguracja, OTA |
 | [docs/usage.md](docs/usage.md) | zachowanie tagu, przycisk, dioda |
 | [docs/game-mode.md](docs/game-mode.md) | tryb kontrolera do gier |
-| [docs/power.md](docs/power.md) | zmierzony pobór prądu, debugowanie |
+| [docs/power.md](docs/power.md) | oszczędzanie baterii, debugowanie poboru |
+| [docs/measurements.md](docs/measurements.md) | pomiary Power Profilerem |
 
 ## Szybki start
 
