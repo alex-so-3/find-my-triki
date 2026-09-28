@@ -1,6 +1,6 @@
 // Zabka Triki (nRF52810-QCAA) pinout.
 // Source: https://github.com/Piwencjusz/zabka-triki-hardware (reverse engineered,
-// marked as possibly wrong - verify with a multimeter before trusting it).
+// partly guessed there; the pins below were checked on a real Triki, except the NOR flash).
 #ifndef TRIKI_BOARD_H
 #define TRIKI_BOARD_H
 

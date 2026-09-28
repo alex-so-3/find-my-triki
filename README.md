@@ -17,6 +17,7 @@ wersja wgrywa się obok starej i zastępuje ją dopiero po sprawdzeniu).
 Sprzęt opisuje [zabka-triki-hardware](https://github.com/Piwencjusz/zabka-triki-hardware). Pinout
 używany przez firmware został sprawdzony na prawdziwym urządzeniu: kwarc 32,768 kHz, LED na P0.28
 (aktywna stanem niskim), przycisk na P0.25, LSM6DSL na I²C P0.05/P0.06 z przerwaniem na P0.09.
+Pola SWD i pełna lista pinów: *Pinout i pierwsze wgranie*.
 
 ## Do czego służy w praktyce
 
@@ -133,22 +134,96 @@ Domyślne hasło to `abcdefgh` – zmień je (`-n`), bo tag przyjmuje połączen
 Usługa konfiguracyjna jest zgodna z Everytag, więc działa też jego `conn_beacon.py` (z tą różnicą,
 że `-l` ustawia czas do bezruchu, a `-m` próg ruchu w mg).
 
-## Pierwsze wgranie
+## Pinout i pierwsze wgranie
 
-1. Podłącz sondę SWD do pól testowych: SWDIO, SWCLK, GND, zasilanie odniesienia (VTref ↔ 3V3) i
-   najlepiej RESET. Styki lubią się rozłączać – błąd `cannot read IDR` zwykle oznacza, że trzeba
-   docisnąć sondę.
-2. Odblokuj chip – **kasuje na zawsze oryginalny firmware Żabki** (nie da się go odczytać ani
+Pierwszy raz firmware wgrywa się przez SWD. Każda kolejna wersja może już przyjść przez OTA.
+
+### Pola testowe SWD
+
+![Pola testowe SWD na płytce Triki](docs/pinout.jpg)
+
+*Zdjęcie: [Piwencjusz/zabka-triki-hardware](https://github.com/Piwencjusz/zabka-triki-hardware)
+(`photos/TIKIpinout.jpg`), zmniejszone.*
+
+Wszystkie pola są po stronie z nRF52810. Bateria zostaje w koszyku pod spodem – płytka jest z niej
+zasilana w trakcie wgrywania.
+
+| Pole | Gdzie (na zdjęciu) | Do czego |
+|---|---|---|
+| 3V3 | górna śruba (styk baterii) | napięcie odniesienia dla sondy (VTref), **nie zasilanie** |
+| GND | pole na prawo od przycisku, wyżej | masa |
+| nRESET | pole obok GND, bliżej przycisku | reset (P0.21) – opcjonalny, ale pomaga przy `recover` |
+| SWDIO | dolne pole po prawej | dane SWD |
+| SWCLK | pole obok SWDIO, bliżej śruby | zegar SWD |
+
+Pola są małe i bez otworów, więc najwygodniej użyć sprężynowych igieł na statywach (PCBite albo
+podobnych) i oprzeć płytkę na krawędziach:
+
+![Wgrywanie sondami PCBite](docs/flashing-setup.jpg)
+
+### Podłączenie sondy
+
+J-Link (złącze 20-pin, 2,54 mm):
+
+| J-Link | Sygnał | Triki |
+|---|---|---|
+| 1 | VTref | 3V3 |
+| 4 (albo inny GND) | GND | GND |
+| 7 | SWDIO | SWDIO |
+| 9 | SWCLK | SWCLK |
+| 15 | RESET | nRESET |
+| 19 | 5V | **nie podłączać** – płytkę zasila bateria |
+
+Sonda CMSIS-DAP (np. Raspberry Pi Pico z `debugprobe`) – te same sygnały, numery pinów są w jej
+dokumentacji. Jeśli sonda nie ma wejścia VTref, podłącza się tylko GND i sygnały.
+
+### Wgrywanie
+
+1. Zbuduj (`make`) – patrz *Budowanie*.
+2. Sprawdź, czy sonda widzi chip:
+   ```sh
+   openocd -f interface/jlink.cfg -c "transport select swd" -f target/nrf52.cfg -c "init; exit"
+   ```
+   Powinno pojawić się `SWD DPIDR 0x2ba01477`. Na oryginalnym firmware OpenOCD może zgłosić, że
+   chip jest zablokowany (APPROTECT) – to normalne, odblokowuje go następny krok.
+3. Odblokuj chip. **Kasuje na zawsze oryginalny firmware Żabki** (nie da się go odczytać ani
    odtworzyć):
    ```sh
    make recover OPENOCD_IF=interface/jlink.cfg
    ```
-3. Wgraj: `make flash OPENOCD_IF=interface/jlink.cfg` (bez `OPENOCD_IF` – `interface/cmsis-dap.cfg`).
-4. LED powinna mignąć raz długo (albo 5 razy krótko, jeśli nie ma jeszcze kluczy).
-   SWD zostaje otwarte (patrz APPROTECT).
+4. Wgraj całość (SoftDevice + bootloader + aplikacja + ustawienia bootloadera):
+   ```sh
+   make flash OPENOCD_IF=interface/jlink.cfg
+   ```
+   Bez `OPENOCD_IF` używana jest sonda CMSIS-DAP (`interface/cmsis-dap.cfg`).
+5. LED powinna mignąć raz długo (albo 5 razy krótko, jeśli w firmware nie ma jeszcze kluczy – wtedy
+   wgraj je przez BLE, patrz *Wgranie kluczy*).
 
-Później tylko aplikacja (zachowuje klucze i ustawienia): `make flash-app OPENOCD_IF=...`.
+Po wgraniu SWD zostaje otwarte (patrz *APPROTECT*), więc `recover` nie jest już potrzebny. Później
+przez SWD wgrywa się samą aplikację, bez kasowania kluczy i ustawień: `make flash-app OPENOCD_IF=...`.
 Wariant z nrfjprog: `PROBE=jlink make flash` (niesprawdzony).
+
+Najczęstszy problem to styk: `cannot read IDR` albo `Error connecting DP` oznacza, że któraś igła
+nie trzyma pola – dociśnij albo przestaw sondy i spróbuj jeszcze raz.
+
+### Piny używane przez firmware
+
+Z `board/triki_board.h`. Pełny pinout w zabka-triki-hardware jest odtworzony ze ścieżek i częściowo
+zgadywany. Poniższe przypisania są sprawdzone na prawdziwym Triki, poza pamięcią NOR (firmware tylko
+ją usypia).
+
+| Pin | Funkcja |
+|---|---|
+| P0.00, P0.01 | kwarc 32,768 kHz |
+| P0.04 | LSM6DSL SA0 (stan niski → adres I²C 0x6A) |
+| P0.05 / P0.06 | LSM6DSL SDA / SCL |
+| P0.09 | LSM6DSL INT1 (wybudzenie ruchem) |
+| P0.10 | LSM6DSL INT2 (nieużywane, opcja `IMU_INT2=1`) |
+| P0.12 | LSM6DSL CS (stan wysoki → tryb I²C) |
+| P0.14, P0.15, P0.18, P0.20 | MX25R8035F: CS, MISO, MOSI, SCK |
+| P0.21 | nRESET (pole testowe) |
+| P0.25 | przycisk (aktywny stanem niskim, pull-up) |
+| P0.28 | LED (aktywna stanem niskim) |
 
 ## OTA
 
@@ -215,6 +290,7 @@ i dłuższy `period` (`-d 4` albo `-d 8`).
 app/            aplikacja (src/, config/sdk_config.h, armgcc/)
 bootloader/     secure bootloader BLE (z przykładu SDK pca10040e_s112_ble)
 board/          pinout Triki, obsługa APPROTECT
+docs/           zdjęcia do README
 tools/          triki_config.py, gen_apple_key.py, make_default_keys.py, mergehex.py
 keys/           klucze i tokeny (poza gitem – nigdy go nie commituj)
 ```

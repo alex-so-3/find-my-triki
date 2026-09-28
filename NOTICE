@@ -10,3 +10,6 @@ Third-party material in this repository
   (https://github.com/CreoleVR/TrikiVR, MIT).
 - The configuration service is protocol-compatible with Everytag
   (https://github.com/vasimv/Everytag).
+- docs/pinout.jpg is photos/TIKIpinout.jpg from zabka-triki-hardware by Dawid Piwowarski
+  (https://github.com/Piwencjusz/zabka-triki-hardware), resized. That repository has no
+  license file; the photo is used with attribution and will be removed on the author's request.
