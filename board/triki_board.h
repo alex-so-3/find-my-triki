@@ -23,13 +23,15 @@
 #define BUTTONS_LIST         { BUTTON_1 }
 #define BSP_BUTTON_0         BUTTON_1
 
-// LSM6DSL (I2C). CS high selects I2C, SA0 low gives address 0x6A.
+// LSM6DSL (I2C). CS high selects I2C; SA0 is strapped low on the board (address 0x6A).
+// P0.04 is NOT the IMU's SA0, whatever the reverse-engineered schematic says: driving it high
+// does not move the sensor to 0x6B, and driving it low costs ~60 uA through a ~45 kOhm pull-up
+// on that net (measured with a PPK2). Leave it unconfigured.
 #define IMU_SDA_PIN          5
 #define IMU_SCL_PIN          6
 #define IMU_INT1_PIN         9    // marked "???" on the schematic
 #define IMU_INT2_PIN         10
 #define IMU_CS_PIN           12
-#define IMU_SA0_PIN          4
 #define IMU_I2C_ADDR         0x6A
 
 // MX25R8035F SPI NOR - only used to put it into deep power-down

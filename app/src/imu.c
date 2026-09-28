@@ -103,12 +103,10 @@ bool imu_init(uint16_t threshold_mg, imu_motion_handler_t handler)
     uint8_t id = 0;
     ret_code_t err;
 
-    // CS high selects I2C mode, SA0 low selects address 0x6A.
-    // Output latches keep these levels in sleep at no cost.
+    // CS high selects I2C mode (the output latch keeps it in sleep at no cost). SA0 is strapped
+    // low on the board (address 0x6A); P0.04 is left alone, see board/triki_board.h.
     nrf_gpio_pin_set(IMU_CS_PIN);
     nrf_gpio_cfg_output(IMU_CS_PIN);
-    nrf_gpio_pin_clear(IMU_SA0_PIN);
-    nrf_gpio_cfg_output(IMU_SA0_PIN);
     nrf_delay_ms(20);
 
     nrfx_twim_config_t config = NRFX_TWIM_DEFAULT_CONFIG;

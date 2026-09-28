@@ -218,7 +218,7 @@ ją usypia).
 | Pin | Funkcja |
 |---|---|
 | P0.00, P0.01 | kwarc 32,768 kHz |
-| P0.04 | LSM6DSL SA0 (stan niski → adres I²C 0x6A) |
+| P0.04 | **nie ruszać** – to nie SA0 czujnika (SA0 jest na płytce na stałe w stanie niskim, adres 0x6A); stan niski na P0.04 kosztuje ~60 µA przez podciągnięcie ~45 kΩ (zmierzone PPK2) |
 | P0.05 / P0.06 | LSM6DSL SDA / SCL |
 | P0.09 | LSM6DSL INT1 (wybudzenie ruchem) |
 | P0.10 | LSM6DSL INT2 (nieużywane, opcja `IMU_INT2=1`) |
