@@ -232,8 +232,20 @@ ją usypia).
 2. Najprościej: fork OpenTagViewer → ekran tagu → *Device settings* → aktualizacja firmware →
    `build/triki_app_dfu.zip`. Aplikacja sama przełącza tag do bootloadera (standardowe Buttonless
    DFU) i wysyła paczkę.
-3. Ręcznie: tag do bootloadera (przycisk 10 s albo `tools/triki_config.py ... --dfu`), potem
+3. Z komputera (bleak, bez dongla Nordica):
+   ```sh
+   tools/triki_dfu.py build/triki_app_dfu.zip -K keys/NAZWA.keys
+   ```
+   Skrypt znajduje tag po ramce Apple, przełącza go do bootloadera (Buttonless DFU) i wysyła
+   paczkę. Tag już w bootloaderze (przycisk 10 s): `tools/triki_dfu.py paczka.zip --bootloader`.
+4. Ręcznie: tag do bootloadera (przycisk 10 s albo `tools/triki_config.py ... --dfu`), potem
    nRF Connect / nRF Device Firmware Update → „TrikiTagDFU” → paczka.
+
+macOS zapamiętuje układ usług niesparowanych urządzeń BLE i nie odświeża go po aktualizacji
+firmware. Jeśli `triki_dfu.py` nie widzi usługi DFU (`Characteristic 8ec90003… was not found`),
+a `triki_config.py` dostaje błędy długości przy zapisie, wyczyść tę pamięć:
+`sudo rm -f /Library/Bluetooth/com.apple.MobileBluetooth.ledevices.other.db* && sudo pkill bluetoothd`
+(same pliki `.db` bez `-wal`/`-shm` nie wystarczą). Sparowanych urządzeń to nie rusza.
 
 Bootloader przyjmuje tylko paczki podpisane Twoim kluczem. Stara aplikacja zostaje w pamięci, dopóki
 nowa nie zostanie w całości odebrana i sprawdzona; przerwany transfer nic nie psuje.
@@ -292,7 +304,7 @@ app/            aplikacja (src/, config/sdk_config.h, armgcc/)
 bootloader/     secure bootloader BLE (z przykładu SDK pca10040e_s112_ble)
 board/          pinout Triki, obsługa APPROTECT
 docs/           zdjęcia do README
-tools/          triki_config.py, gen_apple_key.py, make_default_keys.py, mergehex.py
+tools/          triki_config.py, triki_dfu.py, gen_apple_key.py, make_default_keys.py, mergehex.py
 keys/           klucze i tokeny (poza gitem – nigdy go nie commituj)
 ```
 
