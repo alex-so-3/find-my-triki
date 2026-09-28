@@ -175,6 +175,25 @@ static void on_motion(void)
     }
 }
 
+// A connection (a phone ringing the tag, or configuring it) counts as motion: the tag goes back
+// to fast advertising, so a hidden tag that has not moved for a while is easier to home in on.
+static void on_connected_wake(void)
+{
+    bool was_moving = m_moving;
+
+    m_moving = true;
+    if (m_imu_ok)
+    {
+        (void) app_timer_stop(m_still_timer);
+        APP_ERROR_CHECK(app_timer_start(m_still_timer, APP_TIMER_TICKS(g_settings.still_timeout_s * 1000UL), NULL));
+    }
+    if (!was_moving)
+    {
+        update_runtime();
+        apply_motion_state();
+    }
+}
+
 static void config_mode_enter(void)
 {
     m_config_mode = true;
@@ -369,7 +388,10 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
                 (void) app_timer_stop(m_rearm_timer);
             }
             else
+            {
+                on_connected_wake();
                 session_timer_restart(AUTH_TIMEOUT_S);
+            }
             break;
 
         case BLE_GATTS_EVT_WRITE:

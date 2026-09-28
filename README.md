@@ -34,6 +34,7 @@ Pola SWD i pełna lista pinów: *Pinout i pierwsze wgranie*.
 | Ruch | co 0,5 s × `period` jedno zdarzenie reklamowe, na zmianę Apple / Google (domyślnie każda sieć co 2 s) |
 | Bezruch (po `still_timeout`, domyślnie 10 min) | co 5 s × `period` (domyślnie każda sieć co 20 s) |
 | Przebudzenie | IMU (wake-up, próg domyślnie ~63 mg) zgłasza przerwanie → od razu pakiet i powrót do trybu „ruch” |
+| Połączenie | każde połączenie (dzwonienie, konfiguracja) liczy się jak ruch: tag wraca do szybkiego nadawania na `still_timeout`, więc schowany, nieruszany tag łatwiej namierzyć po sygnale |
 | Połączenie | ramka Apple jest łączliwa: aplikacja może w każdej chwili połączyć się z tagiem, żeby nim zadzwonić, zmienić ustawienia albo wgrać firmware (bez poprawnego hasła połączenie jest zrywane po 20 s) |
 | Tryb konfiguracji | reklama „TrikiTag” z możliwością połączenia przez 120 s (dla narzędzi szukających tagu po nazwie) |
 | Tryb gry | patrz niżej |
@@ -88,7 +89,7 @@ Opcje (po zmianie `make clean`):
 | Opcja | Kiedy |
 |---|---|
 | `APP_VERSION=n` | wersja aplikacji do DFU (musi być wyższa niż wgrana) |
-| `DCDC=1` | mniejszy pobór prądu, ale **tylko jeśli przy pinie DCC jest cewka** – bez niej chip nie wystartuje. Na Triki niesprawdzone, domyślnie wyłączone |
+| `DCDC=0` | wyłącza przetwornicę DC/DC (zostaje LDO). Domyślnie włączona: Triki ma przy pinie DCC cewki 10 µH + 15 nH, sprawdzone na sprzęcie. Na innej płytce **bez tych cewek** chip z DC/DC nie wystartuje |
 | `LFCLK=RC` | płytka bez kwarcu 32,768 kHz (Triki go ma) |
 | `IMU_INT2=1` | przerwanie IMU z INT2 na P0.10 zamiast INT1 na P0.09 (Triki: INT1) |
 | `LED_ACTIVE_HIGH=1` | płytka z LED aktywną stanem wysokim (Triki: niskim) |

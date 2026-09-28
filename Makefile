@@ -7,15 +7,15 @@
 #   make recover          unlock an APPROTECT-locked chip (erases everything!)
 #   PROBE=jlink make ...  use nrfjprog / J-Link instead of OpenOCD
 #
-#   Options: LFCLK=RC  DCDC=1  IMU_INT2=1  LED_ACTIVE_HIGH=1  (see app/armgcc/Makefile)
+#   Options: LFCLK=RC  DCDC=0  IMU_INT2=1  LED_ACTIVE_HIGH=1  (see app/armgcc/Makefile)
 #   After changing options run `make clean` (flags are not tracked by the SDK makefiles)
 #   APP_VERSION=n         application version for DFU (must not go down)
 
 include toolchain.mk
 
-APP_VERSION ?= 2
+APP_VERSION ?= 6
 LFCLK ?= XTAL
-DCDC ?= 0
+DCDC ?= 1
 IMU_INT2 ?= 0
 LED_ACTIVE_HIGH ?= 0
 BL_VERSION ?= 1
